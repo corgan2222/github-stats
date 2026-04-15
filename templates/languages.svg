@@ -57,6 +57,16 @@ li {
   }
 }
 
+@media (prefers-color-scheme: dark) {
+  #background { fill: #0d1117; stroke: #30363d; }
+  h2 { color: #c9d1d9; fill: #c9d1d9; }
+  .lang { color: #c9d1d9; }
+  .percent { color: #8b949e; }
+  .progress { background-color: #30363d; }
+  .progress-item { outline-color: #30363d; }
+  .octicon { fill: #8b949e; }
+}
+
 div.ellipsis {
   height: 100%;
   overflow: hidden;

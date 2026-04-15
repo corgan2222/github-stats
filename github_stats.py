@@ -7,6 +7,9 @@ from typing import Dict, List, Optional, Set, Tuple
 import aiohttp
 import requests
 
+from dotenv import load_dotenv
+load_dotenv()
+
 
 ###############################################################################
 # Main Classes
@@ -63,7 +66,7 @@ class Queries(object):
         :return: deserialized REST JSON output
         """
 
-        for _ in range(60):
+        for _ in range(1):
             headers = {
                 "Authorization": f"token {self.access_token}",
             }
@@ -72,15 +75,21 @@ class Queries(object):
             if path.startswith("/"):
                 path = path[1:]
             try:
+                url=f"https://api.github.com/{path}"
                 async with self.semaphore:
-                    r = await self.session.get(f"https://api.github.com/{path}",
+                    r = await self.session.get(url,
                                                headers=headers,
                                                params=tuple(params.items()))
                 if r.status == 202:
-                    # print(f"{path} returned 202. Retrying...")
-                    print(f"A path returned 202. Retrying...")
+                    print(f"  202 – not ready, skipping after 2s... on {url}")
                     await asyncio.sleep(2)
-                    continue
+                    return dict()
+                elif r.status == 404:
+                    return dict()
+                elif r.status == 403:
+                    print("  403 – rate limited, skipping after 5s...")
+                    await asyncio.sleep(5)
+                    return dict()
 
                 result = await r.json()
                 if result is not None:
@@ -93,13 +102,14 @@ class Queries(object):
                                      headers=headers,
                                      params=tuple(params.items()))
                     if r.status_code == 202:
-                        print(f"A path returned 202. Retrying...")
+                        print(f"202: {path} – skipping after 2s...")
                         await asyncio.sleep(2)
-                        continue
+                        return dict()
+                    elif r.status_code == 404:
+                        return dict()
                     elif r.status_code == 200:
                         return r.json()
-        # print(f"There were too many 202s. Data for {path} will be incomplete.")
-        print("There were too many 202s. Data for this repository will be incomplete.")
+        print(f"Too many 202s for: {path} – data will be incomplete.")
         return dict()
 
     @staticmethod
@@ -453,10 +463,18 @@ Languages:
         """
         if self._lines_changed is not None:
             return self._lines_changed
+
         additions = 0
         deletions = 0
         for repo in await self.repos:
+            url = f"https://api.github.com/repos/{repo}/stats/contributors"
+            print(f"[lines_changed] querying: {url}")
             r = await self.queries.query_rest(f"/repos/{repo}/stats/contributors")
+            if not isinstance(r, list) or len(r) == 0:
+                print(f"[lines_changed] {repo}: skipped (empty/no data, type={type(r).__name__})")
+                continue
+            repo_additions = 0
+            repo_deletions = 0
             for author_obj in r:
                 # Handle malformed response from the API by skipping this repo
                 if (not isinstance(author_obj, dict)
@@ -465,10 +483,13 @@ Languages:
                 author = author_obj.get("author", {}).get("login", "")
                 if author != self.username:
                     continue
-
                 for week in author_obj.get("weeks", []):
-                    additions += week.get("a", 0)
-                    deletions += week.get("d", 0)
+                    repo_additions += week.get("a", 0)
+                    repo_deletions += week.get("d", 0)
+            if repo_additions > 0 or repo_deletions > 0:
+                print(f"[lines_changed] {repo}: +{repo_additions} -{repo_deletions}")
+            additions += repo_additions
+            deletions += repo_deletions
 
         self._lines_changed = (additions, deletions)
         return self._lines_changed
@@ -482,14 +503,20 @@ Languages:
         if self._views is not None:
             return self._views
 
-        total = 0
-        for repo in await self.repos:
-            r = await self.queries.query_rest(f"/repos/{repo}/traffic/views")
-            for view in r.get("views", []):
-                total += view.get("count", 0)
+        async def get_repo_views(repo: str) -> int:
+            print(f"[views] querying: {repo}")
+            try:
+                r = await self.queries.query_rest(f"/repos/{repo}/traffic/views")
+                return sum(view.get("count", 0) for view in r.get("views", []))
+            except Exception as e:
+                print(f"[views] error for {repo}: {e}")
+                return 0
 
-        self._views = total
-        return total
+        results = await asyncio.gather(
+            *[get_repo_views(repo) for repo in await self.repos]
+        )
+        self._views = sum(results)
+        return self._views
 
 
 ###############################################################################
