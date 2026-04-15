@@ -9,8 +9,8 @@ svg {
 #background {
   width: calc(100% - 10px);
   height: calc(100% - 10px);
-  fill: white;
-  stroke: rgb(225, 228, 232);
+  fill: #0d1117;
+  stroke: #30363d;
   stroke-width: 1px;
   rx: 6px;
   ry: 6px;
@@ -27,8 +27,8 @@ h2 {
   line-height: 24px;
   font-size: 16px;
   font-weight: 600;
-  color: rgb(36, 41, 46);
-  fill: rgb(36, 41, 46);
+  color: #ffffff;
+  fill: #ffffff;
 }
 
 ul {
@@ -57,14 +57,14 @@ li {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  #background { fill: #0d1117; stroke: #30363d; }
-  h2 { color: #c9d1d9; fill: #c9d1d9; }
-  .lang { color: #c9d1d9; }
-  .percent { color: #8b949e; }
-  .progress { background-color: #30363d; }
-  .progress-item { outline-color: #30363d; }
-  .octicon { fill: #8b949e; }
+@media (prefers-color-scheme: light) {
+  #background { fill: #ffffff; stroke: rgb(225, 228, 232); }
+  h2 { color: rgb(36, 41, 46); fill: rgb(36, 41, 46); }
+  .lang { color: rgb(36, 41, 46); }
+  .percent { color: rgb(88, 96, 105); }
+  .progress { background-color: rgb(225, 228, 232); }
+  .progress-item { outline-color: rgb(225, 228, 232); }
+  .octicon { fill: rgb(88, 96, 105); }
 }
 
 div.ellipsis {
@@ -74,7 +74,7 @@ div.ellipsis {
 }
 
 .octicon {
-  fill: rgb(88, 96, 105);
+  fill: #e6edf3;
   margin-right: 0.5ch;
   vertical-align: top;
 }
@@ -97,11 +97,11 @@ div.ellipsis {
 .lang {
   font-weight: 600;
   margin-right: 4px;
-  color: rgb(36, 41, 46);
+  color: #ffffff;
 }
 
 .percent {
-  color: rgb(88, 96, 105)
+  color: #e6edf3;
 }
 </style>
 <g>
